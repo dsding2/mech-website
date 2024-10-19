@@ -21,7 +21,7 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 export default function App() {
   const { pathname } = useLocation();
   useEffect(() => {
-    alert('react works!');
+    alert("react works!");
   }, []);
 
   return <html>TEST 2 html</html>;
