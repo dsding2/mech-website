@@ -48,7 +48,7 @@ jobs:
         username: ${{ secrets.USERNAME }}
         key: ${{ secrets.SSH_DEPLOYMENT_KEY }}
         source: './*'
-        target: '/home/'
+        target: '${{ secrets.TARGET_DIRECTORY }}'
     
 
     
