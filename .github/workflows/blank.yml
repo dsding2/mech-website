@@ -50,7 +50,5 @@ jobs:
         target: '${{ secrets.TARGET_DIRECTORY }}'
         rm: true
     
-    - name: 
-    
 
     
