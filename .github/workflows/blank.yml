@@ -49,6 +49,7 @@ jobs:
         key: ${{ secrets.SSH_DEPLOYMENT_KEY }}
         source: './*'
         target: '${{ secrets.TARGET_DIRECTORY }}'
+        rm: true
     
 
     
