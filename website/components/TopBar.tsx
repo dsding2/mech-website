@@ -12,8 +12,8 @@ const TopBar = () => {
         </Link>
       </div>
       <nav className={styles.navLinks}>
-        <Link href="/about">
-          <a>About</a>
+        <Link href="/submit">
+          <a>Submit</a>
         </Link>
         <Link href="/dashboard">
           <a>Dashboard</a>
