@@ -5,9 +5,11 @@ import { highlight, languages } from "prismjs/components/prism-core";
 import "prismjs/components/prism-clike";
 import "prismjs/components/prism-javascript";
 import "prismjs/themes/prism.css";
+import { useAuthenticator } from "@aws-amplify/ui-react";
 import { Button } from "@aws-amplify/ui-react";
 
 export default function Home() {
+  const { user } = useAuthenticator();
   const [file, setFile] = useState<File | null>(null);
   const [message, setMessage] = useState<string>("Select a file for upload");
   const [code, setCode] = useState<string>(
@@ -20,55 +22,42 @@ export default function Home() {
     }
   };
 
+  const sendFile = async (file: Blob) => {
+    const formData = new FormData();
+    formData.append("code", file);
+    try {
+      const response = await fetch("/api/submit", {
+        method: "POST",
+        body: formData,
+        headers: { authorization: user.userId },
+      });
+
+      if (response.ok) {
+        return "File uploaded successfully!";
+      } else {
+        return "File upload failed.";
+      }
+    } catch {
+      return "An error occurred while uploading the file.";
+    }
+  };
+
   const handleUpload = async (event: FormEvent) => {
     event.preventDefault();
     if (!file) {
       setMessage("Please select a file first.");
       return;
     }
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const response = await fetch("/api/submit", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (response.ok) {
-        setMessage("File uploaded successfully!");
-      } else {
-        setMessage("File upload failed.");
-      }
-    } catch {
-      setMessage("An error occurred while uploading the file.");
-    }
+    setMessage(await sendFile(file));
   };
 
   const handleCodeUpload = async () => {
-    if (!file) {
-      setMessage("Please select a file first.");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const response = await fetch("/api/submit", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (response.ok) {
-        setMessage("File uploaded successfully!");
-      } else {
-        setMessage("File upload failed.");
-      }
-    } catch {
-      setMessage("An error occurred while uploading the file.");
-    }
+    const file = {
+      name: "code.js",
+      type: "application/javascript",
+      content: Buffer.from(code).toString("utf-8"),
+    };
+    setMessage(await sendFile(new Blob([file.content], { type: file.type })));
   };
 
   return (
