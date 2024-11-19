@@ -7,6 +7,7 @@ import "prismjs/components/prism-javascript";
 import "prismjs/themes/prism.css";
 import { useAuthenticator } from "@aws-amplify/ui-react";
 import { Button } from "@aws-amplify/ui-react";
+import { uploadData } from "aws-amplify/storage";
 
 export default function Home() {
   const { user } = useAuthenticator();
@@ -15,6 +16,7 @@ export default function Home() {
   const [code, setCode] = useState<string>(
     "function add(a, b) {\n return a + b;\n}"
   );
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     if (event.target && event.target.files && event.target.files.length > 0) {
@@ -23,23 +25,30 @@ export default function Home() {
   };
 
   const sendFile = async (file: Blob) => {
-    const formData = new FormData();
-    formData.append("code", file);
-    try {
-      const response = await fetch("/api/submit", {
-        method: "POST",
-        body: formData,
-        headers: { authorization: user.userId },
-      });
-
-      if (response.ok) {
-        return "File uploaded successfully!";
-      } else {
-        return "File upload failed.";
-      }
-    } catch {
-      return "An error occurred while uploading the file.";
+    if (isSubmitting) {
+      return "Currently submitting file";
     }
+    setIsSubmitting(true);
+    const now: Date = new Date();
+    const formattedTimestamp =
+      `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}` +
+      `_${String(now.getHours()).padStart(2, "0")}-${String(now.getMinutes()).padStart(2, "0")}-${String(now.getSeconds()).padStart(2, "0")}`;
+
+    let result: string = "Error";
+    try {
+      await uploadData({
+        path: `code/${user.userId}/${formattedTimestamp}`,
+        data: file,
+      }).result;
+      setIsSubmitting(false);
+      result = "File successfully uploaded";
+    } catch (error) {
+      console.log("Error : ", error);
+      result = "Error";
+    } finally {
+      setIsSubmitting(false);
+    }
+    return result;
   };
 
   const handleUpload = async (event: FormEvent) => {
@@ -48,6 +57,7 @@ export default function Home() {
       setMessage("Please select a file first.");
       return;
     }
+    // sendFile(file);
     setMessage(await sendFile(file));
   };
 
@@ -70,7 +80,9 @@ export default function Home() {
         }}
       >
         <input type="file" onChange={handleFileChange} />
-        <button type="submit">Upload File</button>
+        <button type="submit" disabled={isSubmitting}>
+          Upload File
+        </button>
       </form>
       <p>{message}</p>
       <Editor
@@ -85,7 +97,9 @@ export default function Home() {
         }}
       />
 
-      <Button onClick={handleCodeUpload}>Upload Code</Button>
+      <Button onClick={handleCodeUpload} disabled={isSubmitting}>
+        Upload Code
+      </Button>
     </div>
   );
 }
