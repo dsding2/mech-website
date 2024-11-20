@@ -1,4 +1,4 @@
-import { useState, ChangeEvent, FormEvent } from "react";
+import { useState, ChangeEvent, FormEvent, useEffect } from "react";
 import Editor from "react-simple-code-editor";
 // @ts-expect-error TS can't see node_modules/@types/prismjs for some reason
 import { highlight, languages } from "prismjs/components/prism-core";
@@ -7,16 +7,43 @@ import "prismjs/components/prism-javascript";
 import "prismjs/themes/prism.css";
 import { useAuthenticator } from "@aws-amplify/ui-react";
 import { Button } from "@aws-amplify/ui-react";
-import { uploadData } from "aws-amplify/storage";
+import { uploadData, list, downloadData } from "aws-amplify/storage";
 
 export default function Home() {
-  const { user } = useAuthenticator();
+  const { user, signOut } = useAuthenticator();
   const [file, setFile] = useState<File | null>(null);
   const [message, setMessage] = useState<string>("Select a file for upload");
   const [code, setCode] = useState<string>(
     "function add(a, b) {\n return a + b;\n}"
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const fetchCode = async () => {
+      try {
+        const result = await list({
+          path: `code/${user.userId}/`,
+        });
+        if (result.items.length === 0) {
+          return;
+        }
+        const mostRecent = result.items.reduce((a, c) => {
+          return (a?.lastModified || Date()) > (c?.lastModified || Date())
+            ? a
+            : c;
+        });
+
+        const downloadResult = await downloadData({
+          path: mostRecent.path,
+        }).result;
+        setCode(await downloadResult.body.text());
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    fetchCode();
+  }, []);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     if (event.target && event.target.files && event.target.files.length > 0) {
@@ -100,6 +127,7 @@ export default function Home() {
       <Button onClick={handleCodeUpload} disabled={isSubmitting}>
         Upload Code
       </Button>
+      <Button onClick={signOut} />
     </div>
   );
 }
